@@ -30,7 +30,7 @@ def get_sector_stocks():
 
 @bp.route("/api/index-stocks")
 def get_index_stocks():
-        print("🔍 Loading stock data...")
+    print("🔍 Loading stock data...")
     data = get_all_index_stocks(limit=100)
     if data is None or len(data) == 0:
         print("⚠️ No data returned from fetch logic.")
