@@ -11,7 +11,18 @@ def index():
 
 @bp.route("/api/stocks")
 def get_sector_stocks():
+    print("🔍 Loading stock data...")
     data = get_top_stocks_by_all_sectors(limit_per_sector=5)
+    if data is None or len(data) == 0:
+        print("⚠️ No data returned from fetch logic.")
+        return jsonify([])
+
+    for row in data:
+        print(f"✅ Loaded {row['symbol']} @ ${row['price']}")
+        row['eod_prediction'] = predict_eod_price(row['price'])
+
+    return jsonify(data)
+    
     for stock in data:
         price = stock.get("price", 0)
         stock["eod_prediction"] = predict_eod_price(price)
@@ -19,7 +30,17 @@ def get_sector_stocks():
 
 @bp.route("/api/index-stocks")
 def get_index_stocks():
+        print("🔍 Loading stock data...")
     data = get_all_index_stocks(limit=100)
+    if data is None or len(data) == 0:
+        print("⚠️ No data returned from fetch logic.")
+        return jsonify([])
+
+    for row in data:
+        print(f"✅ Loaded {row['symbol']} @ ${row['price']}")
+        row['eod_prediction'] = predict_eod_price(row['price'])
+    return jsonify(data)
+    
     for stock in data:
         price = stock.get("price", 0)
         stock["eod_prediction"] = predict_eod_price(price)
