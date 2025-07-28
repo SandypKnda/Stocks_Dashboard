@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Stock Treemap Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+  <h2>📈 Today's Top Stocks by Sector</h2>
+  <div id="treemap"></div>
+  <script>
+    fetch('/api/stocks')
+      .then(res => res.json())
+      .then(data => {
+        const labels = data.map(d => `${d.symbol} ($${d.price})`);
+        const parents = data.map(d => d.sector || "Other");
+        const values = data.map(d => d.price);
+        const custom = data.map(d => `Predicted EOD: $${d.eod_prediction}`);
+
+        const trace = {
+          type: "treemap",
+          labels: labels,
+          parents: parents,
+          values: values,
+          textinfo: "label+value",
+          hovertext: custom,
+          hoverinfo: "text"
+        };
+
+        Plotly.newPlot('treemap', [trace]);
+      });
+  </script>
+</body>
+</html>
