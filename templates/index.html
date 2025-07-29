@@ -31,6 +31,10 @@
       const res = await fetch(`/api/filters?type=${type}`);
       const options = await res.json();
       subFilter.innerHTML = "";
+      const allOption = document.createElement("option");
+      allOption.value = "";
+      allOption.textContent = "All";
+      subFilter.appendChild(allOption);
       options.forEach(opt => {
         const el = document.createElement("option");
         el.value = opt;
@@ -41,8 +45,8 @@
 
     async function loadChart(type, filter) {
       let url = `/api/stocks?type=${type}`;
-      if (type === "stock") url += `&sector=${filter}`;
-      else if (type === "index") url += `&index=${filter}`;
+      if (type === "stock" && filter) url += `&sector=${filter}`;
+      else if (type === "index" && filter) url += `&index=${filter}`;
 
       const res = await fetch(url);
       const data = await res.json();
@@ -72,8 +76,8 @@
         const trendRes = await fetch(`/api/trend?symbol=${symbol}`);
         const trend = await trendRes.json();
 
-        const videoRes = await fetch(`/api/video?symbol=${symbol}`);
-        const { url: videoURL } = await videoRes.json();
+        const blogRes = await fetch(`/api/blog?symbol=${symbol}`);
+        const { url: blogURL } = await blogRes.json();
 
         Plotly.newPlot("stock-details", [{
           x: trend.timestamps,
@@ -84,9 +88,9 @@
         }]);
 
         const details = document.getElementById("stock-details");
-        const video = document.createElement("div");
-        video.innerHTML = `<p>🎥 Analyst vlog:</p><a href="${videoURL}" target="_blank">${videoURL}</a>`;
-        details.appendChild(video);
+        const blogDiv = document.createElement("div");
+        blogDiv.innerHTML = `<p>📝 Analyst blog recommendation:</p><a href="${blogURL}" target="_blank">${blogURL}</a>`;
+        details.appendChild(blogDiv);
       });
     }
 
