@@ -55,7 +55,7 @@
         };
 
         Plotly.newPlot('treemap', [trace]);
-      });
+      })
       .catch(err => {
         console.error("❌ Error loading stock data:", err);
         document.getElementById("treemap").innerHTML = "⚠️ Error loading stock data.";
