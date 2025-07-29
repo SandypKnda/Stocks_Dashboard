@@ -1,114 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>📈 Stock Treemap Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+</head>
 <body>
-  <h2>📈 Today's Top Performers</h2>
+  <h2>📊 Interactive Stock Dashboard</h2>
 
+  <!-- Filters -->
   <label for="type-select">Choose Type:</label>
   <select id="type-select">
-    <option value="stocks">Stocks</option>
-    <option value="indexes">Indexes</option>
+    <option value="stock">Stocks</option>
+    <option value="index">Indexes</option>
   </select>
 
-  <div id="sector-filter" style="display: block; margin-top: 10px;">
-    <label for="sector-select">Select Sector:</label>
-    <select id="sector-select">
-      <option value="">All</option>
-      <option value="Information Technology">Information Technology</option>
-      <option value="Health Care">Health Care</option>
-      <option value="Financials">Financials</option>
-      <option value="Consumer Discretionary">Consumer Discretionary</option>
-      <option value="Energy">Energy</option>
-      <option value="Industrials">Industrials</option>
-      <option value="Real Estate">Real Estate</option>
-      <option value="Materials">Materials</option>
-      <option value="Utilities">Utilities</option>
-      <option value="Communication Services">Communication Services</option>
-      <option value="Consumer Staples">Consumer Staples</option>
-    </select>
-  </div>
+  <label for="sub-filter-select" id="sub-label">Choose Sector:</label>
+  <select id="sub-filter-select"></select>
 
-  <div id="index-filter" style="display: none; margin-top: 10px;">
-    <label for="index-select">Select Index:</label>
-    <select id="index-select">
-      <option value="sp500">S&P 500</option>
-      <option value="nasdaq100">NASDAQ-100</option>
-      <option value="dowjones">Dow Jones</option>
-    </select>
-  </div>
-
-  <div id="treemap" style="margin-top: 20px;"></div>
+  <!-- Chart Area -->
+  <div id="treemap"></div>
+  <div id="stock-details"></div>
 
   <script>
     const typeSelect = document.getElementById("type-select");
-    const sectorFilter = document.getElementById("sector-filter");
-    const sectorSelect = document.getElementById("sector-select");
-    const indexFilter = document.getElementById("index-filter");
-    const indexSelect = document.getElementById("index-select");
+    const subFilter = document.getElementById("sub-filter-select");
+    const subLabel = document.getElementById("sub-label");
 
-    function loadChart(params = {}) {
-      let url = "/api/stocks";
-      const searchParams = new URLSearchParams(params);
-      if (searchParams.toString()) {
-        url += "?" + searchParams.toString();
-      }
-
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          console.log("📊 STOCK DATA:", data);
-          if (!data || data.length === 0) {
-            document.getElementById("treemap").innerHTML = "⚠️ No valid data found.";
-            return;
-          }
-
-          const labels = data.map(d => `${d.symbol} ($${d.price})`);
-          const parents = data.map(d => d.sector || "Other");
-          const values = data.map(d => d.price);
-          const hover = data.map(d => `Predicted EOD: $${d.eod_prediction}`);
-
-          const trace = {
-            type: "treemap",
-            labels: labels,
-            parents: parents,
-            values: values,
-            textinfo: "label+value",
-            hovertext: hover,
-            hoverinfo: "text"
-          };
-
-          Plotly.newPlot('treemap', [trace]);
-        })
-        .catch(err => {
-          console.error("❌ Error loading stock data:", err);
-          document.getElementById("treemap").innerHTML = "⚠️ Error loading stock data.";
-        });
+    async function loadSubFilter(type) {
+      const res = await fetch(`/api/filters?type=${type}`);
+      const options = await res.json();
+      subFilter.innerHTML = "";
+      options.forEach(opt => {
+        const el = document.createElement("option");
+        el.value = opt;
+        el.textContent = opt;
+        subFilter.appendChild(el);
+      });
     }
 
-    // UI control logic
-    typeSelect.addEventListener("change", () => {
+    async function loadChart(type, filter) {
+      let url = `/api/stocks?type=${type}`;
+      if (type === "stock") url += `&sector=${filter}`;
+      else if (type === "index") url += `&index=${filter}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data || data.length === 0) {
+        document.getElementById("treemap").innerHTML = "⚠️ No data found.";
+        return;
+      }
+
+      const labels = data.map(d => `${d.symbol} ($${d.price})`);
+      const parents = data.map(d => d.sector || d.index || "Other");
+      const values = data.map(d => d.price);
+      const custom = data.map(d => `Predicted EOD: $${d.eod_prediction}`);
+
+      const trace = {
+        type: "treemap",
+        labels, parents, values,
+        textinfo: "label+value",
+        hovertext: custom,
+        hoverinfo: "text"
+      };
+
+      Plotly.newPlot("treemap", [trace]);
+
+      document.getElementById("treemap").on("plotly_click", async evt => {
+        const symbol = evt.points[0].label.split(" ")[0];
+        const trendRes = await fetch(`/api/trend?symbol=${symbol}`);
+        const trend = await trendRes.json();
+
+        const videoRes = await fetch(`/api/video?symbol=${symbol}`);
+        const { url: videoURL } = await videoRes.json();
+
+        Plotly.newPlot("stock-details", [{
+          x: trend.timestamps,
+          y: trend.prices,
+          type: "scatter",
+          mode: "lines+markers",
+          name: symbol
+        }]);
+
+        const details = document.getElementById("stock-details");
+        const video = document.createElement("div");
+        video.innerHTML = `<p>🎥 Analyst vlog:</p><a href="${videoURL}" target="_blank">${videoURL}</a>`;
+        details.appendChild(video);
+      });
+    }
+
+    typeSelect.addEventListener("change", async () => {
       const selectedType = typeSelect.value;
-      if (selectedType === "stocks") {
-        sectorFilter.style.display = "block";
-        indexFilter.style.display = "none";
-        loadChart({ type: "stocks", sector: sectorSelect.value });
-      } else if (selectedType === "indexes") {
-        sectorFilter.style.display = "none";
-        indexFilter.style.display = "block";
-        loadChart({ type: "indexes", index: indexSelect.value });
-      }
+      subLabel.textContent = selectedType === "stock" ? "Choose Sector:" : "Choose Index:";
+      await loadSubFilter(selectedType);
+      loadChart(selectedType, subFilter.value);
     });
 
-    sectorSelect.addEventListener("change", () => {
-      if (typeSelect.value === "stocks") {
-        loadChart({ type: "stocks", sector: sectorSelect.value });
-      }
+    subFilter.addEventListener("change", () => {
+      loadChart(typeSelect.value, subFilter.value);
     });
 
-    indexSelect.addEventListener("change", () => {
-      if (typeSelect.value === "indexes") {
-        loadChart({ type: "indexes", index: indexSelect.value });
-      }
+    // Initial
+    loadSubFilter("stock").then(() => {
+      loadChart("stock", subFilter.value);
     });
-
-    // Initial load
-    loadChart({ type: "stocks" });
   </script>
 </body>
+</html>
