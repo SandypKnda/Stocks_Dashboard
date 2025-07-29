@@ -31,10 +31,13 @@
       const res = await fetch(`/api/filters?type=${type}`);
       const options = await res.json();
       subFilter.innerHTML = "";
-      const allOption = document.createElement("option");
-      allOption.value = "";
-      allOption.textContent = "All";
-      subFilter.appendChild(allOption);
+
+      // Add 'All' option
+      const allOpt = document.createElement("option");
+      allOpt.value = "";
+      allOpt.textContent = "All";
+      subFilter.appendChild(allOpt);
+
       options.forEach(opt => {
         const el = document.createElement("option");
         el.value = opt;
@@ -73,12 +76,17 @@
 
       document.getElementById("treemap").on("plotly_click", async evt => {
         const symbol = evt.points[0].label.split(" ")[0];
+
         const trendRes = await fetch(`/api/trend?symbol=${symbol}`);
         const trend = await trendRes.json();
 
         const blogRes = await fetch(`/api/blog?symbol=${symbol}`);
         const { url: blogURL } = await blogRes.json();
 
+        const details = document.getElementById("stock-details");
+        details.innerHTML = "";
+
+        // Line chart
         Plotly.newPlot("stock-details", [{
           x: trend.timestamps,
           y: trend.prices,
@@ -87,10 +95,10 @@
           name: symbol
         }]);
 
-        const details = document.getElementById("stock-details");
-        const blogDiv = document.createElement("div");
-        blogDiv.innerHTML = `<p>📝 Analyst blog recommendation:</p><a href="${blogURL}" target="_blank">${blogURL}</a>`;
-        details.appendChild(blogDiv);
+        // Blog recommendation
+        const blog = document.createElement("div");
+        blog.innerHTML = `<p>📰 Analyst Blog:</p><a href="${blogURL}" target="_blank">${blogURL}</a>`;
+        details.appendChild(blog);
       });
     }
 
