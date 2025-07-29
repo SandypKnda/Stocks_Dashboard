@@ -16,12 +16,24 @@ def get_sector_stocks():
     if data is None or len(data) == 0:
         print("⚠️ No data returned from fetch logic.")
         return jsonify([])
-
+    filtered = []
     for row in data:
-        print(f"✅ Loaded {row['symbol']} @ ${row['price']}")
-        row['eod_prediction'] = predict_eod_price(row['price'])
+        try:
+            price = row['price']
+            if not price or price <= 0:
+                continue  # ⛔ skip $0 or None prices
+            print(f"✅ Loaded {row['symbol']} @ ${row['price']}")
+            row['eod_prediction'] = predict_eod_price(price)
+            filtered.append(row)
+        except Exception as e:
+            print(f"⚠️ Skipping row due to error: {e}")
+            continue
+            
+#    for row in data:
+#        print(f"✅ Loaded {row['symbol']} @ ${row['price']}")
+#        row['eod_prediction'] = predict_eod_price(row['price'])
 
-    return jsonify(data)
+    return jsonify(filtered)
     
     for stock in data:
         price = stock.get("price", 0)
