@@ -11,6 +11,7 @@ def index():
 
 @bp.route("/api/stocks")
 def get_sector_stocks():
+    sector_filter = request.args.get('sector')
     print("🔍 Loading stock data...")
     data = get_top_stocks_by_all_sectors(limit_per_sector=5)
     if data is None or len(data) == 0:
@@ -23,6 +24,8 @@ def get_sector_stocks():
             if not price or price <= 0:
                 continue  # ⛔ skip $0 or None prices
             print(f"✅ Loaded {row['symbol']} @ ${row['price']}")
+            if sector_filter and row['sector'] != sector_filter:
+                continue
             row['eod_prediction'] = predict_eod_price(price)
             filtered.append(row)
         except Exception as e:
