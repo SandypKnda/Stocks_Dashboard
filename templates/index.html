@@ -1,53 +1,68 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Stock Treemap Dashboard</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <!-- ✅ Updated to latest Plotly -->
-  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-</head>
 <body>
-  <h2>📈 Today's Top Stocks by Sector</h2>
+  <h2>📈 Today's Top Performers</h2>
 
-  <label for="sector-select">Select Sector:</label>
-  <select id="sector-select">
-    <option value="">All</option>
-    <option value="Information Technology">Information Technology</option>
-    <option value="Health Care">Health Care</option>
-    <option value="Financials">Financials</option>
-    <option value="Consumer Discretionary">Consumer Discretionary</option>
-    <option value="Energy">Energy</option>
-    <option value="Industrials">Industrials</option>
-    <option value="Real Estate">Real Estate</option>
-    <option value="Materials">Materials</option>
-    <option value="Utilities">Utilities</option>
-    <option value="Communication Services">Communication Services</option>
-    <option value="Consumer Staples">Consumer Staples</option>
+  <label for="type-select">Choose Type:</label>
+  <select id="type-select">
+    <option value="stocks">Stocks</option>
+    <option value="indexes">Indexes</option>
   </select>
+
+  <div id="sector-filter" style="display: block; margin-top: 10px;">
+    <label for="sector-select">Select Sector:</label>
+    <select id="sector-select">
+      <option value="">All</option>
+      <option value="Information Technology">Information Technology</option>
+      <option value="Health Care">Health Care</option>
+      <option value="Financials">Financials</option>
+      <option value="Consumer Discretionary">Consumer Discretionary</option>
+      <option value="Energy">Energy</option>
+      <option value="Industrials">Industrials</option>
+      <option value="Real Estate">Real Estate</option>
+      <option value="Materials">Materials</option>
+      <option value="Utilities">Utilities</option>
+      <option value="Communication Services">Communication Services</option>
+      <option value="Consumer Staples">Consumer Staples</option>
+    </select>
+  </div>
+
+  <div id="index-filter" style="display: none; margin-top: 10px;">
+    <label for="index-select">Select Index:</label>
+    <select id="index-select">
+      <option value="sp500">S&P 500</option>
+      <option value="nasdaq100">NASDAQ-100</option>
+      <option value="dowjones">Dow Jones</option>
+    </select>
+  </div>
 
   <div id="treemap" style="margin-top: 20px;"></div>
 
   <script>
+    const typeSelect = document.getElementById("type-select");
+    const sectorFilter = document.getElementById("sector-filter");
     const sectorSelect = document.getElementById("sector-select");
+    const indexFilter = document.getElementById("index-filter");
+    const indexSelect = document.getElementById("index-select");
 
-    function loadChart(sector = "") {
+    function loadChart(params = {}) {
       let url = "/api/stocks";
-      if (sector) url += `?sector=${encodeURIComponent(sector)}`;
+      const searchParams = new URLSearchParams(params);
+      if (searchParams.toString()) {
+        url += "?" + searchParams.toString();
+      }
 
       fetch(url)
         .then(res => res.json())
         .then(data => {
           console.log("📊 STOCK DATA:", data);
-
           if (!data || data.length === 0) {
-            document.getElementById("treemap").innerHTML = "⚠️ No valid stock data found.";
+            document.getElementById("treemap").innerHTML = "⚠️ No valid data found.";
             return;
           }
 
           const labels = data.map(d => `${d.symbol} ($${d.price})`);
           const parents = data.map(d => d.sector || "Other");
           const values = data.map(d => d.price);
-          const custom = data.map(d => `Predicted EOD: $${d.eod_prediction}`);
+          const hover = data.map(d => `Predicted EOD: $${d.eod_prediction}`);
 
           const trace = {
             type: "treemap",
@@ -55,7 +70,7 @@
             parents: parents,
             values: values,
             textinfo: "label+value",
-            hovertext: custom,
+            hovertext: hover,
             hoverinfo: "text"
           };
 
@@ -67,14 +82,33 @@
         });
     }
 
-    // Load chart initially
-    loadChart();
-
-    // Filter by sector
-    sectorSelect.addEventListener("change", () => {
-      const selectedSector = sectorSelect.value;
-      loadChart(selectedSector);
+    // UI control logic
+    typeSelect.addEventListener("change", () => {
+      const selectedType = typeSelect.value;
+      if (selectedType === "stocks") {
+        sectorFilter.style.display = "block";
+        indexFilter.style.display = "none";
+        loadChart({ type: "stocks", sector: sectorSelect.value });
+      } else if (selectedType === "indexes") {
+        sectorFilter.style.display = "none";
+        indexFilter.style.display = "block";
+        loadChart({ type: "indexes", index: indexSelect.value });
+      }
     });
+
+    sectorSelect.addEventListener("change", () => {
+      if (typeSelect.value === "stocks") {
+        loadChart({ type: "stocks", sector: sectorSelect.value });
+      }
+    });
+
+    indexSelect.addEventListener("change", () => {
+      if (typeSelect.value === "indexes") {
+        loadChart({ type: "indexes", index: indexSelect.value });
+      }
+    });
+
+    // Initial load
+    loadChart({ type: "stocks" });
   </script>
 </body>
-</html>
