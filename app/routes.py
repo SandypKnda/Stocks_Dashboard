@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, render_template
+from flask import Blueprint, jsonify, render_template, request
 from app.services.fetch_data import get_top_stocks_by_all_sectors
 from app.services.predict_eod import predict_eod_price
 from app.services.fetch_data import get_all_index_stocks
