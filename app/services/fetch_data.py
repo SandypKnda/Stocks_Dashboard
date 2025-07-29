@@ -4,6 +4,7 @@ import requests
 from typing import List, Dict
 
 # 1. Get S&P 500 stock symbols from Wikipedia
+@lru_cache(maxsize=1)
 def get_sp500_stocks() -> pd.DataFrame:
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
     tables = pd.read_html(url)
@@ -13,6 +14,7 @@ def get_sp500_stocks() -> pd.DataFrame:
     )
 
 # 2. Filter all stocks by a given sector
+@lru_cache(maxsize=1)
 def get_stocks_by_sector(sector: str, limit=50) -> List[Dict]:
     sp500_df = get_sp500_stocks()
     filtered = sp500_df[sp500_df['sector'] == sector]
