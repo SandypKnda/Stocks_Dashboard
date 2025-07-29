@@ -2,7 +2,7 @@ import yfinance as yf
 import pandas as pd
 import requests
 from typing import List, Dict
-
+from functools import lru_cache
 # 1. Get S&P 500 stock symbols from Wikipedia
 @lru_cache(maxsize=1)
 def get_sp500_stocks() -> pd.DataFrame:
