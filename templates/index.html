@@ -8,9 +8,28 @@
 </head>
 <body>
   <h2>📈 Today's Top Stocks by Sector</h2>
+  <label for="sector-select">Select Sector:</label>
+  <select id="sector-select">
+    <option value="">All</option>
+    <option value="Information Technology">Information Technology</option>
+    <option value="Health Care">Health Care</option>
+    <option value="Financials">Financials</option>
+    <option value="Consumer Discretionary">Consumer Discretionary</option>
+    <option value="Energy">Energy</option>
+    <option value="Industrials">Industrials</option>
+    <option value="Real Estate">Real Estate</option>
+    <option value="Materials">Materials</option>
+    <option value="Utilities">Utilities</option>
+    <option value="Communication Services">Communication Services</option>
+    <option value="Consumer Staples">Consumer Staples</option>
+  </select>
   <div id="treemap"></div>
   <script>
-    fetch('/api/stocks')
+    const sectorSelect = document.getElementById("sector-select");
+    function loadChart(sector = "") {
+      let url = "/api/stocks";
+      if (sector) url += `?sector=${encodeURIComponent(sector)}`;
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         console.log("📊 STOCK DATA:", data);  // <== NEW LINE
@@ -40,7 +59,13 @@
       .catch(err => {
         console.error("❌ Error loading stock data:", err);
         document.getElementById("treemap").innerHTML = "⚠️ Error loading stock data.";
-      });
+      }
+      ##// Event listener for dropdown
+      sectorSelect.addEventListener("change", () => {
+        const selectedSector = sectorSelect.value;
+        loadChart(selectedSector);
+      });      
+      loadChart();
   </script>
 </body>
 </html>
